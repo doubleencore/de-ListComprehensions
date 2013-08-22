@@ -34,17 +34,22 @@ NSArray *singleListComprehension(NSArray *list,
     // If empty, return @[], if nil, return nil
     emptyNilGuard(list);
     
+    // Only enumerate indexes for which the predicate is true
+    NSIndexSet *indexesToEnumerate = nil;
+    if (predicateBlock != nil) {
+        indexesToEnumerate = [list indexesOfObjectsPassingTest:^BOOL(id obj, NSUInteger idx, BOOL *stop) {
+            return predicateBlock(obj,idx);
+        }];
+    }
+    else {
+        indexesToEnumerate = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, [list count])];
+    }
     // Temporarily holds the output of the comprehension as it's in progress.
     NSMutableArray *mutableOutput = [NSMutableArray arrayWithCapacity:list.count];
-    [list enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        //  Check the truth value of predicateBlock 1st so we can
-        //  short-circuit the evaluation; if there's no predicate
-        //  it implies that it is the true predicate.
-        if (!predicateBlock || predicateBlock(obj, idx)) {
+    [list enumerateObjectsAtIndexes:indexesToEnumerate options:0 usingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
             id transformed = outputBlock(obj, idx);
             [mutableOutput addObject:transformed];
-        }
-    }];
+        }];
     return [mutableOutput copy];
 }
 
